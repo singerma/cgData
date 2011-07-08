@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import cgData
+import cgData, operator
 
 gafHeaders = [
     "Entry Number", "FeatureID", "FeatureType", "FeatureDBSource",
@@ -17,6 +17,25 @@ gafCols = [
     "compositeDBDate", "alignmentType", "featureCoordinates",
     "compositeCoordinates", "gene", "geneLocus", "featureAliases",
     "featureInfo"]
+
+
+def parseFeatureCoordinates(featureCoordinates):
+    featureCoordinatesList = featureCoordinates.split(";")
+    accumulator = []
+    for i in featureCoordinatesList:
+        i = i.split(",")
+        i = map(lambda x: tuple(x.split("-")), i)
+        accumulator.append(i)
+    return accumulator
+
+def parseChromCoordinates(chromCoordinates):
+    chromCoordinatesList = chromCoordinates.split(";")
+    chromCoordinatesList = map(lambda x: x.split(":"), chromCoordinatesList)
+    unzippedList = zip(*chromCoordinatesList)
+    unzippedList[1] = map(parseFeatureCoordinates, unzippedList[1])
+    assert(reduce(operator.mul, map(len, unzippedList[1])) == 1) #make sure all the lists have len 1
+    unzippedList[1] = unzippedList[1][0]
+    return zip(*unzippedList)
 
 
 class gafLine:
@@ -40,8 +59,8 @@ class gafLine:
         self.compositeDBVersion = compositeDBVersion
         self.compositeDBDate = compositeDBDate
         self.alignmentType = alignmentType
-        self.featureCoordinates = featureCoordinates
-        self.compositeCoordinates = compositeCoordinates
+        self.featureCoordinates = parseFeatureCoordinates(featureCoordinates)
+        self.compositeCoordinates = parseChromCoordinates(compositeCoordinates)
         self.gene = gene
         self.geneLocus = geneLocus
         self.featureAliases = featureAliases
