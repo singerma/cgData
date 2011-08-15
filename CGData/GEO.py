@@ -9,14 +9,14 @@ import csv
 import os
 import json
 
-class geoQuery:
+class GEOQuery:
 
     def __init__(self):
         robjects.r('library(GEOquery)')
         robjects.r('library(rjson)')
     
-    def getGSM(self, gsmID):
-        robjects.r.assign("gsm.id", gsmID)
+    def get_gsm(self, gsm_id):
+        robjects.r.assign("gsm.id", gsm_id)
         tmp = NamedTemporaryFile(delete=True)
         tmp.close()
         robjects.r.assign("gsm.file", tmp.name)
