@@ -28,8 +28,6 @@ bedFile.read( handle )
 
 mapper = CGData.GeneMap.ProbeMapper( )
 
-pm = CGData.ProbeMap.ProbeMap()
-
 for bed in bedFile:
     out = mapper.find_overlap( bed, refGene, hitFunc )
     o = []
@@ -37,7 +35,6 @@ for bed in bedFile:
     bed.aliases = []
     for e in out:
         bed.aliases.append( e.name )
+       
+    print "%s\t%s" % (bed.name, ",".join(bed.aliases))
 
-    pm.append( bed )
-
-pm.write( sys.stdout )

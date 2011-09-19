@@ -13,14 +13,14 @@ CREATE TABLE `%s` (
   `shortLabel` varchar(255) default NULL,
   `longLabel` varchar(255) default NULL,
   `valField` varchar(255) default NULL,
-  `tableName` varchar(255) default NULL,
+  `clinicalTable` varchar(255) default NULL,
   `priority` float default NULL,
   `filterType` varchar(255) default NULL,
   `visibility` varchar(255) default NULL,
   `groupName` varchar(255) default NULL,
   PRIMARY KEY  (`id`),
   KEY `name` (`name`)
-);
+) engine 'MyISAM';
 """
 
 class ClinicalMatrix(CGData.TSVMatrix.TSVMatrix,CGData.CGSQLObject):
@@ -52,6 +52,7 @@ class ClinicalMatrix(CGData.TSVMatrix.TSVMatrix,CGData.CGSQLObject):
             id_allocator.alloc( 'feature_id', sample_id )
 
     def gen_sql(self, id_table):
+        CGData.log( "Gen %s SQL" % (self.attrs['name']))
         float_map = {}
         enum_map = {}
         for key in self.col_list:
@@ -109,11 +110,11 @@ CREATE TABLE clinical_%s (
 
         for col in col_order:
             if ( enum_map.has_key( col ) ):
-                yield ",\n\t%s ENUM( '%s' ) default NULL" % (col, "','".join( sql_fix(a) for a in enum_map[ col ].keys() ) )
+                yield ",\n\t`%s` ENUM( '%s' ) default NULL" % (col.strip(), "','".join( sql_fix(a) for a in enum_map[ col ].keys() ) )
             else:
-                yield ",\n\t%s FLOAT default NULL" % (col)
+                yield ",\n\t`%s` FLOAT default NULL" % (col.strip())
         yield """
-    ) ;	
+    ) engine 'MyISAM';
     """
         
         for target in self.row_hash:
@@ -122,10 +123,10 @@ CREATE TABLE clinical_%s (
                 val = self.row_hash[ target ][ self.col_list[ col ] ]
                 #print target, col, val
                 if val is None or val == "null" or len(val) == 0 :
-                    a.append("\N")
+                    a.append("\\N")
                 else:				
-                    a.append( "'" + sql_fix( str(val) ) + "'" )
-            yield "INSERT INTO clinical_%s VALUES ( %d, %s );\n" % ( table_name, id_table.get( 'sample_id', target ), ",".join(a) )
+                    a.append( "'" + sql_fix( val.encode('string_escape') ) + "'" )
+            yield u"INSERT INTO clinical_%s VALUES ( %d, %s );\n" % ( table_name, id_table.get( 'sample_id', target ), u",".join(a) )
 
 
         yield "drop table if exists clinical_%s_colDb;" % ( table_name )
@@ -136,7 +137,7 @@ CREATE TABLE clinical_%s (
 `shortLabel` varchar(255) default NULL,
 `longLabel` varchar(255) default NULL,
 `valField` varchar(255) default NULL,
-`table_name` varchar(255) default NULL,
+`clinicalTable` varchar(255) default NULL,
 `priority` float default NULL,
 `filterType` varchar(255) default NULL,
 `visibility` varchar(255) default NULL,
@@ -145,8 +146,9 @@ PRIMARY KEY  (`id`),
 KEY `name` (`name`)
 """
         for name in col_order:
-            yield "INSERT INTO clinical_%s_colDb(name, shortLabel,longLabel,valField,table_name) VALUES( '%s', '%s', '%s', '%s', '%s' );\n" % \
-                ( table_name, name, name, name, name, "clinical_" + table_name )
+            filter = 'coded' if enum_map.has_key(name) else 'minMax'
+            yield "INSERT INTO clinical_%s_colDb(name, shortLabel,longLabel,valField,clinicalTable,filterType,visibility,priority) VALUES( '%s', '%s', '%s', '%s', '%s', '%s', 'on',1);\n" % \
+                    ( table_name, name, name, name, name, "clinical_" + table_name, filter )
 
             
         
