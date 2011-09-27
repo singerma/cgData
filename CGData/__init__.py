@@ -18,6 +18,7 @@ function which will parse the contents of a file from a passed file handle.
 OBJECT_MAP = {
     'genomicSegment': ('GenomicSegment', 'GenomicSegment'),
     'genomicMatrix': ('GenomicMatrix', 'GenomicMatrix'),
+    'genomicMutation': ('GenomicMutation', 'GenomicMutation'),
     'probeMap': ('ProbeMap', 'ProbeMap'),
     'sampleMap': ('SampleMap', 'SampleMap'),
     'clinicalMatrix': ('ClinicalMatrix', 'ClinicalMatrix'),
