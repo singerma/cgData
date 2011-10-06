@@ -23,13 +23,14 @@ OBJECT_MAP = {
     'sampleMap': ('SampleMap', 'SampleMap'),
     'clinicalMatrix': ('ClinicalMatrix', 'ClinicalMatrix'),
     'dataSubType': ('DataSubType', 'DataSubType'),
-    'track': ('Track', 'Track'),
+    'trackGenomic': ('CGData.TrackGenomic', 'TrackGenomic'),
+    'trackClinical': ('CGData.TrackClinical', 'TrackClinical'),
     'assembly': ('Assembly', 'Assembly'),
     'clinicalFeature': ('ClinicalFeature', 'ClinicalFeature'),
     'vcf': ('MutationMember', 'MutationMember')
 }
 
-MERGE_OBJECTS = [ 'track' ]
+MERGE_OBJECTS = [ 'trackClinical', 'trackGenomic' ]
 
 class FormatException(Exception):
 
@@ -42,11 +43,9 @@ def has_type(type_str):
 
 def get_type(type_str):
     mod_name, cls_name = OBJECT_MAP[type_str]
-    module = __import__("CGData." + mod_name)
-    submodule = getattr(module, mod_name)
-    cls = getattr(submodule, cls_name)
+    module = __import__(mod_name, globals(), locals(), [ cls_name ])
+    cls = getattr(module, cls_name)
     return cls
-
 
 class CGGroupMember:
     pass
@@ -136,7 +135,7 @@ class CGObjectBase:
             mhandle.close()
 
     def unload(self):
-		pass
+        pass
 
     def is_link_ready(self):
         return True
@@ -155,6 +154,12 @@ class CGObjectBase:
             dhandle = open(path, "w")
             self.write(dhandle)
             dhandle.close()            
+            
+    def get_attrs(self):
+        return self.attrs
+    
+    def get_attr(self, name):
+        return self.attrs.get(name,None)
 
     def set_attrs(self, attrs):
         self.attrs = attrs
@@ -186,7 +191,7 @@ class CGObjectBase:
         self.attrs[ 'history' ].append( desc )
 
 
-class CGMergeObject:
+class CGMergeObject(object):
     
     typeSet = {}
     
@@ -195,6 +200,21 @@ class CGMergeObject:
     
     def merge(self, **kw):
         self.members = kw
+    
+    def __iter__(self):
+        return self.members.keys().__iter__()
+    
+    def __getitem__(self, item):
+        return self.members[item]
+
+    def unload(self):
+        pass
+    
+    def gen_sql(self, id_table):
+        for t in self.members:
+            if issubclass(get_type(t), CGSQLObject):
+                for line in self.members[t].gen_sql(id_table):
+                    yield line
 
 
 
@@ -211,7 +231,7 @@ class CGDataMatrixObject(CGObjectBase):
 
 
 
-class CGSQLObject:
+class CGSQLObject(object):
     
     def init_schema(self):
         pass
@@ -261,9 +281,8 @@ class CGGroupBaseSQL(CGGroupBase, CGSQLObject):
 
 def cg_new(type_str):
     mod_name, cls_name = OBJECT_MAP[type_str]
-    module = __import__("CGData." + mod_name)
-    submodule = getattr(module, mod_name)
-    cls = getattr(submodule, cls_name)
+    module = __import__(mod_name, globals(), locals(), [ cls_name ])
+    cls = getattr(module, cls_name)
     out = cls()
     return out
 
@@ -318,16 +337,19 @@ def light_load(path, zip=None):
     else:
         raise FormatException("%s class not found" % (meta['type']))
 
-
+global LOG_LEVEL
+LOG_LEVEL = 2
 
 def log(eStr):
-    sys.stderr.write("LOG: %s\n" % (eStr))
-    #errorLogHandle.write("LOG: %s\n" % (eStr))
+    if LOG_LEVEL < 2:
+        sys.stderr.write("LOG: %s\n" % (eStr))
+        #errorLogHandle.write("LOG: %s\n" % (eStr))
 
 
 def warn(eStr):
-    sys.stderr.write("WARNING: %s\n" % (eStr))
-    #errorLogHandle.write("WARNING: %s\n" % (eStr))
+    if LOG_LEVEL < 1:
+        sys.stderr.write("WARNING: %s\n" % (eStr))
+        #errorLogHandle.write("WARNING: %s\n" % (eStr))
 
 
 def error(eStr):

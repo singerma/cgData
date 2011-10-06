@@ -6,6 +6,8 @@ import CGData.TSVMatrix
 class GenomicMatrix(CGData.TSVMatrix.TSVMatrix):
     
     null_type = float('nan')
+    element_type = float
+    corner_name = "#probe"
 
     def __init__(self):
         CGData.TSVMatrix.TSVMatrix.__init__(self)
@@ -15,16 +17,27 @@ class GenomicMatrix(CGData.TSVMatrix.TSVMatrix):
             return False
         return True
 
+    def get_x_namespace(self):
+        if self.attrs.get(":sampleMap", None) is not None:
+            return "sampleMap:" + self.attrs[":sampleMap"]
+        return None
+
+    def get_y_namespace(self):
+        if self.attrs.get(":probeMap", None) is not None:
+            return "probeMap:" + self.attrs[":probeMap"]
+        return None
+
+
     def get_probe_list(self):
         return self.get_rows()
 
     def get_sample_list(self):
         return self.get_cols()
 
-    def add(self, probe, sample, value):
+    def add(self, sample, probe, value):
         """This is just an overload of the TSVMatrix 
         that changes the parameter names"""
-        CGData.TSVMatrix.TSVMatrix.add(self, probe, sample, value)
+        CGData.TSVMatrix.TSVMatrix.add(self, sample, probe, value)
 
     def sample_rename(self, old_sample, new_sample):
         self.col_rename( old_sample, new_sample )
