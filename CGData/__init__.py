@@ -25,7 +25,8 @@ OBJECT_MAP = {
     'dataSubType': ('DataSubType', 'DataSubType'),
     'track': ('Track', 'Track'),
     'assembly': ('Assembly', 'Assembly'),
-    'clinicalFeature': ('ClinicalFeature', 'ClinicalFeature')
+    'clinicalFeature': ('ClinicalFeature', 'ClinicalFeature'),
+    'vcf': ('MutationMember', 'MutationMember')
 }
 
 MERGE_OBJECTS = [ 'track' ]
@@ -220,6 +221,42 @@ class CGSQLObject:
     
     def build_ids(self, id_allocator):
         pass
+    
+class CGGroupMemberSQL(CGGroupMember):
+   
+    def gen_sql_head(self):
+        pass
+    
+    def gen_sql_lines(self):
+        pass
+    
+    def gen_sql_tail(self):
+        pass
+
+class CGGroupBaseSQL(CGGroupBase, CGSQLObject):
+    
+    def __init__(self, group_name):
+        CGGroupBase.__init__(self, group_name)
+        
+    def init_schema(self):
+        pass
+    
+    def gen_sql(self, id_table):
+        headname, headdata = self.members.items()[0]
+        #generate header from the first member
+        for line in headdata.gen_sql_head():
+            yield line
+        #generate lines from each member
+        for member in self.members.itervalues():
+            for line in member.gen_sql_lines(id_table):
+                yield line
+        #generate end
+        for line in headdata.gen_sql_tail():
+            yield line
+        
+    def build_ids(self, id_allocator):
+        for member in self.members.itervalues():
+            member.build_ids(id_allocator)
     
 
 def cg_new(type_str):

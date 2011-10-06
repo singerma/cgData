@@ -90,7 +90,10 @@ class BrowserCompiler:
                 for oname in self.set_hash[ otype ]:
                     oobj = self.set_hash[ otype ][ oname ]
                     if oobj.get_group() not in gmap:
-                        gmap[ oobj.get_group() ] = CGData.CGGroupBase( oobj.get_group() )
+                        if issubclass(CGData.get_type(otype), CGData.CGGroupMemberSQL):
+                            gmap[ oobj.get_group() ] = CGData.CGGroupBaseSQL( oobj.get_group() )
+                        else:
+                            gmap[ oobj.get_group() ] = CGData.CGGroupBase( oobj.get_group() )
                     gmap[ oobj.get_group() ].put( oobj )
                 omatrix[ otype ] = gmap
             else:
